@@ -5,6 +5,8 @@
 #include <iostream>
 #include "assert.h"
 #include <string>
+#include <cmath>
+#include <omp.h>
 
 template <typename T> class Block;
 
@@ -53,7 +55,7 @@ template <class T> void Block<T>::set_pixel(int row, int col, int channel, T val
 }
 
 template <class T> Image<T>::Image() {
-    matrix = NULL;
+    matrix = nullptr;
 }
 template <class T> Image<T>::Image(int width, int height, int channels) {
     this->width = width;
@@ -65,12 +67,7 @@ template <class T> Image<T>::Image(const Image<T> &a) {
     width = a.width;
     height = a.height;
     channels = a.channels;
-    if (a.matrix != NULL) {
-        matrix = a.matrix;
-    }
-    else{
-        matrix = NULL;
-    }
+    matrix = (a.matrix != nullptr) ? a.matrix : nullptr;
 }
 template <class T> Image<T>::~Image() {
     release();
@@ -82,17 +79,12 @@ template <class T> Image<T> Image<T>::operator=(const Image<T> &a) {
     width = a.width;
     height = a.height;
     channels = a.channels;
-    if (a.matrix != NULL) {
-        matrix = a.matrix;
-    }
-    else{
-        matrix = NULL;
-    }
+    matrix = (a.matrix != nullptr) ? a.matrix : nullptr;
     return *this;
 }
 
 template <class T> void Image<T>::release() {
-    matrix = NULL;  
+    matrix = nullptr;  
 }
 
 template <class T> T Image<T>::get(int row, int col, int channel) const{
@@ -105,68 +97,67 @@ template <class T> void Image<T>::set(int row, int col, int channel, T value) {
 template <class T> Image<T> Image<T>::operator*(const Image<T>& other) const {
     assert(width == other.width && height == other.height && channels == other.channels);
     Image<T> new_image(width, height, channels);
-    for(int j=0;j<height;j++)
-    {
+    #pragma omp parallel for collapse(2)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
                 new_image.set(j, i, c, this->get(j, i, c) * other.get(j, i, c));
             }
         }    
     }
-        
     return new_image;
 }
+
 template <class T> Image<T> Image<T>::operator*(float scalar) const {
     Image<T> new_image(width, height, channels);
-    for(int j=0;j<height;j++)
-    {
+    #pragma omp parallel for collapse(2)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
                 new_image.set(j, i, c, (T)(this->get(j, i, c)*scalar));
             }
         }    
     }
-        
     return new_image;
 }
+
 template <class T> Image<T> Image<T>::operator+(const Image<T>& other) const {
     assert(width == other.width && height == other.height && channels == other.channels);
     Image<T> new_image(width, height, channels);
-    for(int j=0;j<height;j++)
-    {
+    #pragma omp parallel for collapse(2)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
                 new_image.set(j,i,c, this->get(j, i,c)+other.get(j, i, c));
             }
         }    
     }
-        
     return new_image;
 }
+
 template <class T> Image<T> Image<T>::operator+(float scalar) const {
     Image<T> new_image(width, height, channels);
-    for(int j=0;j<height;j++)
-    {
+    #pragma omp parallel for collapse(2)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
                 new_image.set(j, i, c, ((T)this->get(j, i, c)+scalar));
             }
         }    
     }
-        
     return new_image;
 }
+
 template <class T> Image<T> Image<T>::abs() const {
     Image<T> new_image(width, height, channels);
-    for(int j=0;j<height;j++)
-    {
+    #pragma omp parallel for collapse(2)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
-                new_image.set(j, i, c, (T)std::abs(this->get(j,i,c)));
+                new_image.set(j, i, c, (T)std::abs((double)this->get(j,i,c)));
             }
         }    
     }
-        
     return new_image;
 }
 
@@ -174,6 +165,8 @@ template <class T> Image<T> Image<T>::convolution(const Image<float> &kernel) co
     assert(kernel.width%2 != 0 && kernel.height%2 != 0 && kernel.width == kernel.height && kernel.channels==1);
     int kernel_size = kernel.width;
     Image<T> convolved(width, height, channels);
+    
+    #pragma omp parallel for schedule(dynamic)
     for(int j=0;j<height;j++){
         for(int i=0;i<width; i++){
             for(int c=0;c<channels;c++){
@@ -182,12 +175,11 @@ template <class T> Image<T> Image<T>::convolution(const Image<float> &kernel) co
                     for(int v=0;v<kernel_size;v++){
                         int s = (j + u - kernel_size/2)%height;
                         int t = (i + v - kernel_size/2)%width;
-                        if (s < 0 || s >= height || t < 0 || t >= width)
-                            continue;
+                        if (s < 0 || s >= height || t < 0 || t >= width) continue;
                         sum += (this->get(s, t, c) * kernel.get(u,v, 0));
                     }
                 }
-                convolved.set(j, i, 0, (T)sum/(kernel_size*kernel_size));
+                convolved.set(j, i, c, (T)(sum/(kernel_size*kernel_size)));
             }
         }
     }
@@ -196,21 +188,21 @@ template <class T> Image<T> Image<T>::convolution(const Image<float> &kernel) co
 
 template <class T> template <typename S> Image<S> Image<T>::convert() const {
     Image<S> new_image(width, height, channels);
-    for(int j=0;j<height;j++)
-    {
+    #pragma omp parallel for collapse(2)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
-                new_image.set(j, i, c, (T)this->get(j, i, c));
+                new_image.set(j, i, c, (S)this->get(j, i, c));
             }
         }    
     }
-        
     return new_image;
 }
 
 template <class T> Image<T> Image<T>::to_grayscale() const {
     if (channels == 1) return convert<T>();
     Image<T> image(width, height, 1);
+    #pragma omp parallel for
     for(int j=0;j<height;j++){
         for(int i=0;i<width;i++){
             image.set(j, i, 0, (T)((0.299 * this->get(j, i, 0) + (0.587 * this->get(j, i, 1)) + (0.114 * this->get(j,i,2)))));
@@ -218,48 +210,52 @@ template <class T> Image<T> Image<T>::to_grayscale() const {
     }
     return image;
 }
+
 template <class T> Image<float> Image<T>::normalized() const {
     Image<float> new_image(width, height, channels);
-    float max_value = -999999999;
-    float min_value = 999999999;
-    for(int j=0;j<height;j++)
-    {
+    float max_value = -1e9, min_value = 1e9;
+
+    #pragma omp parallel for reduction(max:max_value) reduction(min:min_value)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
-                if (this->get(j,i,c) > max_value) max_value = this->get(j,i,c);
-                if (this->get(j,i,c) < min_value) min_value = this->get(j,i,c);
+                float val = (float)this->get(j,i,c);
+                if (val > max_value) max_value = val;
+                if (val < min_value) min_value = val;
             }
         }    
     }
 
-    for(int j=0;j<height;j++)
-    {
+    float range = max_value - min_value;
+    if (range == 0) range = 1.0f; 
+
+    #pragma omp parallel for collapse(2)
+    for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
-                new_image.set(j,i,c, (this->get(j, i, c)-min_value) / (max_value - min_value));
+                new_image.set(j,i,c, (this->get(j, i, c)-min_value) / range);
             }
         }    
     }
-        
     return new_image;
 }
 
 template <class T> std::vector<Block<T>> Image<T>::get_blocks(int block_size) {
-  	int depth = channels;
-  	assert(width % block_size == 0 || height % block_size == 0);
-  	std::vector<Block<T>> blocks;
-  	for (int row=0;row<height;row+=block_size)
-  		for(int col=0;col<width;col+=block_size){
-  			Block<T> b;
-  			b.i=col;
-  			b.j=row;
-  			b.size=block_size;
-  			b.rowsize=width*channels;
-  			b.matrix=this;
-  			b.depth=depth;
-  			blocks.push_back(b);
-  		}
-  	return blocks;
+	int depth = channels;
+	assert(width % block_size == 0 || height % block_size == 0);
+	std::vector<Block<T>> blocks;
+	for (int row=0;row<height;row+=block_size)
+		for(int col=0;col<width;col+=block_size){
+			Block<T> b;
+			b.i=col;
+			b.j=row;
+			b.size=block_size;
+			b.rowsize=width*channels;
+			b.matrix=this;
+			b.depth=depth;
+			blocks.push_back(b);
+		}
+	return blocks;
 }
 
 #endif
