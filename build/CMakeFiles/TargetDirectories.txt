@@ -1,0 +1,6 @@
+/mnt/c/Users/nicog/practica_paralela/Task1/src/build/CMakeFiles/detect.dir
+/mnt/c/Users/nicog/practica_paralela/Task1/src/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/nicog/practica_paralela/Task1/src/build/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/nicog/practica_paralela/Task1/src/build/utils/CMakeFiles/utils.dir
+/mnt/c/Users/nicog/practica_paralela/Task1/src/build/utils/CMakeFiles/edit_cache.dir
+/mnt/c/Users/nicog/practica_paralela/Task1/src/build/utils/CMakeFiles/rebuild_cache.dir
