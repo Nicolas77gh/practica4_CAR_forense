@@ -11,6 +11,7 @@
 #include <string>
 #include <chrono>
 #include <future> // Tarea 1.3: Necesario para std::async
+#include <omp.h>
 
 /* --- FUNCIONES DE SOPORTE PARA SRM --- */
 
@@ -77,7 +78,7 @@ Image<unsigned char> compute_dct(const Image<unsigned char> &image, int block_si
     // Tarea 1.3: Paralelismo a nivel de datos con OpenMP
     // Se utiliza schedule(dynamic) debido a que la carga computacional de la DCT 
     // puede variar ligeramente según el contenido de la imagen en cada bloque.
-    #pragma omp parallel for schedule(dynamic)
+    // #pragma omp parallel for schedule(dynamic) num_threads(2)
     for(int i = 0; i < (int)blocks.size(); i++){
         float **dctBlock = dct::create_matrix(block_size, block_size);
         dct::direct(dctBlock, blocks[i], 0);
@@ -109,7 +110,7 @@ int main(int argc, char **argv) {
 
     int block_size = 8;
     Image<unsigned char> image = load_from_file(argv[1]);
-
+	
     // Inicio de la medición global para cálculo de Speed-up
     auto total_begin = std::chrono::steady_clock::now();
 

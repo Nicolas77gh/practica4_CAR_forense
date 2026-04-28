@@ -57,7 +57,8 @@ Image<unsigned char> read_png(const std::string &filename) {
   for(int i=0;i<image.height;i++)
     rows[i] = new unsigned char[image.width*image.channels];
   png_read_image(png, rows);
-  #pragma omp parallel for collapse(2)
+  // #pragma omp parallel for collapse(2)
+  // quitamos esto porque al ejecutar en wsl me daba un problema de memoria
   for(int j=0;j<image.height;j++)
     for(int i=0; i<image.width;i++)
         for(int c=0;c<image.channels;c++)
@@ -119,7 +120,7 @@ void write_png(const std::string &filename, const Image<unsigned char> &image) {
   for(int i=0;i<image.height;i++)
     rows[i] = new unsigned char[image.width*image.channels];
 
-  #pragma omp parallel for collapse(2)
+  // #pragma omp parallel for collapse(2)
   for(int j=0;j<image.height;j++)
     for(int i=0; i<image.width;i++)
         for(int c=0;c<image.channels;c++)

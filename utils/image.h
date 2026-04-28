@@ -97,7 +97,7 @@ template <class T> void Image<T>::set(int row, int col, int channel, T value) {
 template <class T> Image<T> Image<T>::operator*(const Image<T>& other) const {
     assert(width == other.width && height == other.height && channels == other.channels);
     Image<T> new_image(width, height, channels);
-    #pragma omp parallel for collapse(2)
+    // #pragma omp parallel for collapse(2)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
@@ -110,7 +110,7 @@ template <class T> Image<T> Image<T>::operator*(const Image<T>& other) const {
 
 template <class T> Image<T> Image<T>::operator*(float scalar) const {
     Image<T> new_image(width, height, channels);
-    #pragma omp parallel for collapse(2)
+    // #pragma omp parallel for collapse(2)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
@@ -124,7 +124,7 @@ template <class T> Image<T> Image<T>::operator*(float scalar) const {
 template <class T> Image<T> Image<T>::operator+(const Image<T>& other) const {
     assert(width == other.width && height == other.height && channels == other.channels);
     Image<T> new_image(width, height, channels);
-    #pragma omp parallel for collapse(2)
+    // #pragma omp parallel for collapse(2)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
@@ -137,7 +137,7 @@ template <class T> Image<T> Image<T>::operator+(const Image<T>& other) const {
 
 template <class T> Image<T> Image<T>::operator+(float scalar) const {
     Image<T> new_image(width, height, channels);
-    #pragma omp parallel for collapse(2)
+    // #pragma omp parallel for collapse(2)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
@@ -150,7 +150,7 @@ template <class T> Image<T> Image<T>::operator+(float scalar) const {
 
 template <class T> Image<T> Image<T>::abs() const {
     Image<T> new_image(width, height, channels);
-    #pragma omp parallel for collapse(2)
+    // #pragma omp parallel for collapse(2)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
@@ -166,7 +166,7 @@ template <class T> Image<T> Image<T>::convolution(const Image<float> &kernel) co
     int kernel_size = kernel.width;
     Image<T> convolved(width, height, channels);
     
-    #pragma omp parallel for schedule(dynamic)
+    // #pragma omp parallel for schedule(dynamic)
     for(int j=0;j<height;j++){
         for(int i=0;i<width; i++){
             for(int c=0;c<channels;c++){
@@ -188,7 +188,7 @@ template <class T> Image<T> Image<T>::convolution(const Image<float> &kernel) co
 
 template <class T> template <typename S> Image<S> Image<T>::convert() const {
     Image<S> new_image(width, height, channels);
-    #pragma omp parallel for collapse(2)
+    // #pragma omp parallel for collapse(2)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
@@ -202,7 +202,7 @@ template <class T> template <typename S> Image<S> Image<T>::convert() const {
 template <class T> Image<T> Image<T>::to_grayscale() const {
     if (channels == 1) return convert<T>();
     Image<T> image(width, height, 1);
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for(int j=0;j<height;j++){
         for(int i=0;i<width;i++){
             image.set(j, i, 0, (T)((0.299 * this->get(j, i, 0) + (0.587 * this->get(j, i, 1)) + (0.114 * this->get(j,i,2)))));
@@ -215,7 +215,7 @@ template <class T> Image<float> Image<T>::normalized() const {
     Image<float> new_image(width, height, channels);
     float max_value = -1e9, min_value = 1e9;
 
-    #pragma omp parallel for reduction(max:max_value) reduction(min:min_value)
+    // #pragma omp parallel for reduction(max:max_value) reduction(min:min_value)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
@@ -229,7 +229,7 @@ template <class T> Image<float> Image<T>::normalized() const {
     float range = max_value - min_value;
     if (range == 0) range = 1.0f; 
 
-    #pragma omp parallel for collapse(2)
+    // #pragma omp parallel for collapse(2)
     for(int j=0;j<height;j++) {
         for(int i=0;i<width;i++){
             for(int c=0;c<channels;c++){
