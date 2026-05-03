@@ -75,10 +75,6 @@ Image<unsigned char> compute_dct(const Image<unsigned char> &image, int block_si
     Image<float> grayscale = image.convert<float>().to_grayscale();
     std::vector<Block<float>> blocks = grayscale.get_blocks(block_size);
 
-    // Tarea 1.3: Paralelismo a nivel de datos con OpenMP
-    // Se utiliza schedule(dynamic) debido a que la carga computacional de la DCT 
-    // puede variar ligeramente según el contenido de la imagen en cada bloque.
-    // #pragma omp parallel for schedule(dynamic) num_threads(2)
     for(int i = 0; i < (int)blocks.size(); i++){
         float **dctBlock = dct::create_matrix(block_size, block_size);
         dct::direct(dctBlock, blocks[i], 0);
